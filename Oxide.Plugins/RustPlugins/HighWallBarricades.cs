@@ -7,6 +7,11 @@ using Newtonsoft.Json;
 using System.Collections;
 using System.Reflection;
 
+
+/* TODO:
+ * optimize the plugin using coroutines
+ */ 
+
 /* TODO:
  * [x] Make option for other barricades
  * [x] Make option to check for authorization of player who placed barricade

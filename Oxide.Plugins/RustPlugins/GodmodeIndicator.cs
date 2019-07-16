@@ -11,7 +11,7 @@ using static Oxide.Game.Rust.Cui.CuiHelper;
 
 namespace Oxide.Plugins
 {
-    [Info("Godmode Indicator", "2CHEVSKII", "2.0.2")]
+    [Info("Godmode Indicator", "2CHEVSKII", "2.0.3")]
     [Description("Displays an indicator on screen if a player is in godmode")]
     class GodmodeIndicator : RustPlugin
     {
@@ -21,9 +21,11 @@ namespace Oxide.Plugins
 
         private static GodmodeIndicator Instance { get; set; }
 
-        [PluginReference] private Plugin ImageLibrary;
+        [PluginReference]
+        private Plugin ImageLibrary;
 
-        [PluginReference] private Plugin Godmode;
+        [PluginReference]
+        private Plugin Godmode;
 
         private List<BasePlayer> ActiveIndicator { get; set; }
 
@@ -91,14 +93,12 @@ namespace Oxide.Plugins
             timer.Once(1f, () => BuildUI());
             timer.Once(3f, () =>
             {
-                foreach(BasePlayer player in BasePlayer.activePlayerList) player.gameObject.AddComponent<GodmodeComponent>();
+                foreach(BasePlayer player in BasePlayer.activePlayerList)
+                    player.gameObject.AddComponent<GodmodeComponent>();
             });
         }
 
-        private void OnPlayerInit(BasePlayer player)
-        {
-            player.gameObject.AddComponent<GodmodeComponent>().IsWaiting = true;
-        }
+        private void OnPlayerInit(BasePlayer player) => player.gameObject.AddComponent<GodmodeComponent>().IsWaiting = true;
 
         private void OnPlayerSleepEnded(BasePlayer player)
         {
@@ -170,42 +170,41 @@ namespace Oxide.Plugins
             private BasePlayer Player { get; set; }
             private bool IsInGodMode { get; set; }
             internal bool IsWaiting { get; set; }
+            private float LastUpdate { get; set; }
 
-            private void Awake()
-            {
-                Player = GetComponent<BasePlayer>();
-            }
+            private void Awake() => Player = GetComponent<BasePlayer>();
 
             private void Update()
             {
-                if(Player == null || !Player.IsConnected) DetachComponent();
-                else
+                if(Time.realtimeSinceStartup - LastUpdate > 1f)
                 {
-                    if(Player.IsImmortal()) IsInGodMode = true;
+                    if(Player == null || !Player.IsConnected) DetachComponent();
                     else
                     {
-                        if(Instance.Godmode != null && Instance.Godmode.IsLoaded && Instance.Godmode.Call<bool>("IsGod", Player.UserIDString)) IsInGodMode = true;
-                        else IsInGodMode = false;
+                        if(Player.IsImmortal()) IsInGodMode = true;
+                        else
+                        {
+                            if(Instance.Godmode != null && Instance.Godmode.IsLoaded && Instance.Godmode.Call<bool>("IsGod", Player.UserIDString)) IsInGodMode = true;
+                            else IsInGodMode = false;
+                        }
                     }
-                }
-                if(IsInGodMode && !Instance.ActiveIndicator.Contains(Player) && Instance.UIBuilt && !IsWaiting)
-                {
-                    Instance.ActiveIndicator.Add(Player);
-                    AddUi(Player, Instance.MainUI);
-                }
-                else if(!IsInGodMode && Instance.ActiveIndicator.Contains(Player))
-                {
-                    Instance.ActiveIndicator.Remove(Player);
-                    DestroyUi(Player, mainPanel);
+                    if(IsInGodMode && !Instance.ActiveIndicator.Contains(Player) && Instance.UIBuilt && !IsWaiting)
+                    {
+                        Instance.ActiveIndicator.Add(Player);
+                        AddUi(Player, Instance.MainUI);
+                    }
+                    else if(!IsInGodMode && Instance.ActiveIndicator.Contains(Player))
+                    {
+                        Instance.ActiveIndicator.Remove(Player);
+                        DestroyUi(Player, mainPanel);
+                    }
+                    LastUpdate = Time.realtimeSinceStartup;
                 }
             }
 
             internal void DetachComponent() => Destroy(this);
 
-            private void OnDestroy()
-            {
-                DestroyUi(Player, mainPanel);
-            }
+            private void OnDestroy() => DestroyUi(Player, mainPanel);
         }
 
 

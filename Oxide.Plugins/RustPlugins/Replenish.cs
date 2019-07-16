@@ -4,6 +4,13 @@ using System.Linq;
 using Oxide.Core;
 using UnityEngine;
 
+
+/* TODO:
+ * Remaster
+ * 
+ * 
+ * */
+
 namespace Oxide.Plugins {
     [Info("Replenish", "Skrallex & 2CHEVSKII", "1.3.3")]
     [Description("Easily replenish chests")]

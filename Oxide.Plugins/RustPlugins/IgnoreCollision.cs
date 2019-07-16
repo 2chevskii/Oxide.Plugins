@@ -1,38 +1,23 @@
 using System.Linq;
-using System.Collections.Generic;
 using UnityEngine;
-using System;
-
-/* About:
- * Vlad-00003 - Original creator of this plugin (No more supports it)
- * 2CHEVSKII - Current maintainer (Responsible for all what's happening here)
- * Changelog:
- * Major rework and code cleanup
- * Option to dynamically disable collision when stated amount exceed
- * Option to log plugin activity
- * */
-
-// Original idea and plugin version => Vlad-00003
 
 namespace Oxide.Plugins
 {
-    [Info("IgnoreCollision", "2CHEVSKII", "1.1.0")]
+    [Info("IgnoreCollision", "2CHEVSKII", "1.1.1")]
     [Description("This plugin removes collisions between dropped items")]
-    class IgnoreCollision : RustPlugin
+    internal class IgnoreCollision : RustPlugin
     {
 
         #region [Fields]
 
 
-        bool ignore = true;
-        bool dynamicIgnore = true;
-        //bool combineDetection = false;
-        bool logs = true;
-        int ignoreStartAmount = 300;
-        int checkinterval = 3;
-        List<DroppedItem> droppedItems = new List<DroppedItem>();
-        Dictionary<DroppedItem, KeyValuePair<DroppedItem, int>> delayedItems = new Dictionary<DroppedItem, KeyValuePair<DroppedItem, int>>();
-        bool nowDisabled = false;
+        private bool ignore = true;
+        private bool dynamicIgnore = true;
+
+        private bool logs = true;
+        private int ignoreStartAmount = 300;
+        private int droppedItemCount = 0;
+        private bool nowDisabled = false;
 
 
         #endregion
@@ -42,18 +27,16 @@ namespace Oxide.Plugins
 
         protected override void LoadDefaultConfig() { }
 
-        void LoadConfigVariables()
+        private void LoadConfigVariables()
         {
-            CheckConfig("1.Disable collision:", ref ignore);
-            CheckConfig("2.Dynamic collision disabling:", ref dynamicIgnore);
-            CheckConfig("3.Amount to disable collision:", ref ignoreStartAmount);
-            CheckConfig("4.How often to check for amount (sec):", ref checkinterval);
-            //CheckConfig("5.Combine items even when disabled collision:", ref combineDetection); //doesnt work yet
-            CheckConfig("5.Log plugin activity:", ref logs);
+            CheckConfig("1.Disable collision", ref ignore);
+            CheckConfig("2.Dynamic collision disabling", ref dynamicIgnore);
+            CheckConfig("3.Amount to disable collision", ref ignoreStartAmount);
+            CheckConfig("5.Log plugin activity", ref logs);
             SaveConfig();
         }
 
-        void CheckConfig<T>(string key, ref T value)
+        private void CheckConfig<T>(string key, ref T value)
         {
             if(Config[key] is T) value = (T)Config[key];
             else Config[key] = value;
@@ -65,27 +48,52 @@ namespace Oxide.Plugins
         #region [Hooks]
 
 
-        void Init() => LoadConfigVariables();
+        private void Init() => LoadConfigVariables();
 
-        void Loaded()
+        private void Loaded()
         {
             if(ignore)
             {
                 if(!dynamicIgnore) DisableCollision();
                 else
-                    timer.Every(checkinterval, () =>
+                {
+                    RefreshDroppedItems();
+                    if(droppedItemCount <= ignoreStartAmount)
                     {
-                        CheckAmountOfDroppedItems();
-                        //if(combineDetection) CheckCombine();
-                    });
+                        PrintConsoleWarning(WarningType.MoreThan);
+                        DisableCollision();
+                    }
+                }
             }
-            PrintConsoleMessage(WarningType.Load);
+            PrintConsoleWarning(WarningType.Load);
         }
-        
-        void Unload()
+
+        private void OnServerInitialized() => droppedItemCount = BaseNetworkable.serverEntities.OfType<DroppedItem>().Count();
+
+        private void OnItemDropped(Item item, BaseEntity entity)
+        {
+            droppedItemCount++;
+            if(droppedItemCount >= ignoreStartAmount && !nowDisabled)
+            {
+                PrintConsoleWarning(WarningType.MoreThan);
+                DisableCollision();
+            }
+        }
+
+        private void OnItemPickup(Item item, BasePlayer player)
+        {
+            droppedItemCount--;
+            if(droppedItemCount < ignoreStartAmount && nowDisabled)
+            {
+                EnableCollision();
+                PrintConsoleWarning(WarningType.LessThan);
+            }
+        }
+
+        private void Unload()
         {
             EnableCollision();
-            PrintConsoleMessage(WarningType.Unload);
+            PrintConsoleWarning(WarningType.Unload);
         }
 
 
@@ -94,63 +102,11 @@ namespace Oxide.Plugins
         #region [Core]
 
 
-        void DisableCollision() { Physics.IgnoreLayerCollision(26, 26, true); nowDisabled = true; }
+        private void DisableCollision() { Physics.IgnoreLayerCollision(26, 26, true); nowDisabled = true; }
 
-        void EnableCollision() { Physics.IgnoreLayerCollision(26, 26, false); nowDisabled = false; }
+        private void EnableCollision() { Physics.IgnoreLayerCollision(26, 26, false); nowDisabled = false; }
 
-        void CheckCombine()
-        {
-            if(nowDisabled)
-            {
-                RefreshDroppedItems();
-                delayedItems.Clear();
-                foreach(var droppeditem in droppedItems)
-                {
-                    var itemtocombinewith = droppedItems.Find(di => Vector3.Distance(di.ServerPosition, droppeditem.ServerPosition) < 2);
-                    var finalAmount = droppeditem.item.amount + itemtocombinewith.item.amount;
-                    if(finalAmount != 0 && finalAmount <= itemtocombinewith.item.info.stackable && droppeditem != null && itemtocombinewith != null && itemtocombinewith.item.info.stackable > 1 && droppeditem.item.info != itemtocombinewith.item.info || ((droppeditem.item.IsBlueprint() || itemtocombinewith.item.IsBlueprint()) && droppeditem.item.blueprintTarget != itemtocombinewith.item.blueprintTarget))
-                    {
-                        delayedItems.Add(droppeditem, new KeyValuePair<DroppedItem, int>(itemtocombinewith, finalAmount));
-                    }
-                }
-                droppedItems.Clear();
-                DelayedCombine(delayedItems);
-            }
-        }
-
-        void DelayedCombine(Dictionary<DroppedItem, KeyValuePair<DroppedItem, int>> items)
-        {
-            foreach(var item in items.Keys)
-            {
-                item.DestroyItem();
-                item.Kill();
-                items[item].Key.item.amount = items[item].Value;
-                items[item].Key.item.MarkDirty();
-                if(items[item].Key.GetDespawnDuration() < float.PositiveInfinity)
-                {
-                    items[item].Key.Invoke(items[item].Key.IdleDestroy, items[item].Key.GetDespawnDuration());
-                }
-                Effect.server.Run("assets/bundled/prefabs/fx/notice/stack.world.fx.prefab", items[item].Key, 0u, Vector3.zero, Vector3.zero);
-            }
-        }
-        
-        void CheckAmountOfDroppedItems()
-        {
-            RefreshDroppedItems();
-            int amount = droppedItems.Count;
-            if(amount >= ignoreStartAmount)
-            {
-                if(!nowDisabled) PrintConsoleMessage(WarningType.TooManyItems);
-                DisableCollision();
-            }
-            else
-            {
-                if(nowDisabled) PrintConsoleMessage(WarningType.TooLittleItems);
-                EnableCollision();
-            }
-        }
-        
-        void RefreshDroppedItems() => droppedItems = GameObject.FindObjectsOfType<DroppedItem>().ToList();
+        private void RefreshDroppedItems() => droppedItemCount = BaseNetworkable.serverEntities.OfType<DroppedItem>().Count();
 
 
         #endregion
@@ -158,7 +114,7 @@ namespace Oxide.Plugins
         #region [Logs]
 
 
-        void PrintConsoleMessage(WarningType warningType)
+        private void PrintConsoleWarning(WarningType warningType)
         {
             switch(warningType)
             {
@@ -168,24 +124,18 @@ namespace Oxide.Plugins
                 case WarningType.Unload:
                     PrintWarning($"Plugin is being unloaded, all items collision enabled!");
                     break;
-                case WarningType.TooManyItems:
+                case WarningType.MoreThan:
                     if(logs) PrintWarning($"Dropped item limit exceed ({ignoreStartAmount}) - collision disabled!");
                     break;
-                case WarningType.TooLittleItems:
+                case WarningType.LessThan:
                     if(logs) PrintWarning($"Dropped items less than limit ({ignoreStartAmount}) - collision enabled!");
                     break;
                 default:
                     break;
             }
         }
-        
-        enum WarningType
-        {
-            Load,
-            Unload,
-            TooManyItems,
-            TooLittleItems
-        }
+
+        private enum WarningType { Load, Unload, MoreThan, LessThan }
 
 
         #endregion

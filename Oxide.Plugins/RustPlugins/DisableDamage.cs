@@ -1,22 +1,6 @@
 ﻿using System.Collections.Generic;
 using Oxide.Core;
 
-/* DisableDamage -> Public Rust Plugin : https://rustworkshop.space/resources/disable-damage.17/
- * Author -> 2CHEVSKII :
- * : https://umod.org/user/2CHEVSKII 
- * : https://github.com/2chevskii/ 
- * : https://rustworkshop.space/members/2chevskii.8/ 
- * : https://www.youtube.com/channel/UCgq5jjofrmIXCagJXqrMG9w 
- * Changelog:
- * [0.1.0] - Initial release
- * [0.2.0] - Added option for barrels
- *         - Added option for transport (Copters and boats)
- *         - Added option for helicopter
- * [0.3.0] - Added option to make damage be disabled by default (For PvE servers)
- *         - Optimized functions and hooks
- *         - Fixed color of 1 message
- * */
-
 namespace Oxide.Plugins
 {
     [Info("Disable Damage", "2CHEVSKII", "0.3.0")]

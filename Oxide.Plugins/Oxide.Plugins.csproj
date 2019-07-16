@@ -33,12 +33,14 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RustPlugins\AFKAPI.cs" />
+<<<<<<< HEAD
+=======
     <Compile Include="RustPlugins\EntityCleanup.cs" />
+>>>>>>> master
     <Compile Include="RustPlugins\DisableDamage.cs" />
     <Compile Include="RustPlugins\DVACHEVSKIIDebugPlugin.cs" />
     <Compile Include="RustPlugins\AutoFPSLimiter.cs" />
-    <Compile Include="RustPlugins\EnhancedHammer.cs" />
-    <Compile Include="RustPlugins\GameTipAPI.cs" />
+    <Compile Include="RustPlugins\EntityCleanup.cs" />
     <Compile Include="RustPlugins\GodmodeIndicator.cs" />
     <Compile Include="RustPlugins\HighWallBarricades.cs" />
     <Compile Include="RustPlugins\IgnoreCollision.cs" />
@@ -48,14 +50,24 @@
     <Compile Include="RustPlugins\NoEscape.cs" />
     <Compile Include="RustPlugins\NPCDropGun.cs" />
     <Compile Include="RustPlugins\PerformanceUI.cs" />
+<<<<<<< HEAD
+    <Compile Include="RustPlugins\RealisticExplosions.cs" />
+=======
     <Compile Include="RustPlugins\PlayerGifts .cs" />
+>>>>>>> master
     <Compile Include="RustPlugins\Replenish.cs" />
     <Compile Include="RustPlugins\Skins.cs" />
     <Compile Include="RustPlugins\Telekinesis.cs" />
     <Compile Include="RustPlugins\TeleportGun.cs" />
+<<<<<<< HEAD
+    <Compile Include="RustPlugins\WeatherDB.cs" />
+    <Compile Include="RustPlugins\WhereIsMyHorse.cs" />
+    <Compile Include="UniversalPlugins\WipeDataCleaner.cs" />
+=======
     <Compile Include="RustPlugins\WeatherToDatabase.cs" />
     <Compile Include="RustPlugins\WhereIsMyHorse.cs" />
     <Compile Include="RustPlugins\WipeDataCleaner.cs" />
+>>>>>>> master
     <Compile Include="UniversalPlugins\PermissionHelper.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -226,6 +238,9 @@
     </Reference>
     <Reference Include="Rust.World">
       <HintPath>..\..\..\RustOxideDependencies\Rust.World.dll</HintPath>
+    </Reference>
+    <Reference Include="Rust.Workshop">
+      <HintPath>..\..\..\RustOxideDependencies\Rust.Workshop.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />

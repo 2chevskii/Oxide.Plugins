@@ -2,23 +2,11 @@
 using System;
 using Random = UnityEngine.Random;
 using System.Collections.Generic;
+using System.Linq;
 
-/*TODO:
-* Make configuration [x]
-* Optimize code a bit [x]
-* Add new features? [x]
-* ...?
-* Maybe some more features? Dunno... [?] 
+/* TODO:
+* Attachments
 */
-
-
-
-
-
-    // - ATTACHMENTS
-
-
-    // - Detailed ammo in gun setting
 
 /* Changelog
   * [1.3.1] New configuration and option to remove default loot
@@ -31,7 +19,7 @@ using System.Collections.Generic;
 
 namespace Oxide.Plugins
 {
-    [Info("NPC Drop Gun", "2CHEVSKII", "1.5.0")]
+    [Info("NPC Drop Gun", "2CHEVSKII", "1.6.0")]
     [Description("Forces NPC to drop used gun and some ammo after death")]
     class NPCDropGun : RustPlugin
     {
@@ -53,12 +41,15 @@ namespace Oxide.Plugins
             CheckConfigFloat("3.Amounts", "Condition Min", ref minCondition);
             CheckConfig("3.Amounts", "Meds Max", ref maxMeds);
             CheckConfig("3.Amounts", "Meds Min", ref minMeds);
+            CheckConfig("3.Amounts", "Gun Ammo Max", ref maxGunAmmo);
+            CheckConfig("3.Amounts", "Gun Ammo Min", ref minGunAmmo);
             CheckConfig("2.Chances of drop", "Guns", ref chanceToDropGun);
             CheckConfig("2.Chances of drop", "Ammo", ref chanceToDropAmmo);
             CheckConfig("2.Chances of drop", "Meds", ref chanceToDropMeds);
             CheckConfig("4.Utility", "Remove default loot", ref removeDefLoot);
             CheckConfig("4.Utility", "Put held items into inventory", ref putGunIntoInv);
             CheckConfig("4.Utility", "Drop items near the corpse if it's full", ref dropnearcorpse);
+            CheckConfig("4.Utility", "Assign random skin to item", ref assignRandomSkin);
 
             //Condition of weapons needs to be normalized
             if(minCondition < 0.0f) minCondition = 0f;
@@ -119,6 +110,9 @@ namespace Oxide.Plugins
         private int minAmmo = 20;
         private int maxAmmo = 120;
 
+        private int minGunAmmo = 0;
+        private int maxGunAmmo = 30;
+
         private float minCondition = 0.1f;
         private float maxCondition = 1.0f;
 
@@ -132,6 +126,7 @@ namespace Oxide.Plugins
         private bool removeDefLoot = false;
         private bool putGunIntoInv = false;
         private bool dropnearcorpse = true;
+        private bool assignRandomSkin = true;
 
 
         #endregion
@@ -227,15 +222,17 @@ namespace Oxide.Plugins
             {
                 Item weapon = null;
                 if(heldEntity.GetItem() != null)
-                    weapon = ItemManager.CreateByItemID(heldEntity.GetItem().info.itemid);
+                {
+                    var definition = heldEntity.GetItem().info;
+                    weapon = ItemManager.Create(heldEntity.GetItem().info, 1, assignRandomSkin ? GetRandomSkin(definition) : 0uL);
+                }
                 if(weapon != null)
                 {
                     if(weapon.hasCondition)
-                        weapon.conditionNormalized = Random.Range((float)minCondition, (float)maxCondition);
+                        weapon.conditionNormalized = Random.Range(minCondition, maxCondition);
 
-                    var _weapon = weapon.GetHeldEntity()?.GetComponent<BaseProjectile>();
-                    if(_weapon != null)
-                        _weapon.primaryMagazine.contents = Random.Range(0, _weapon.primaryMagazine.capacity);
+                    var projectile = weapon.GetHeldEntity()?.GetComponent<BaseProjectile>();
+                    if(projectile != null) projectile.primaryMagazine.contents = Random.Range(minGunAmmo, Mathf.Min(maxGunAmmo, projectile.primaryMagazine.capacity));
 
                     if(putGunIntoInv)
                         delayedWeapons.Enqueue(weapon);
@@ -355,6 +352,18 @@ namespace Oxide.Plugins
                     });
                 }
             }
+        }
+
+
+        private ulong GetRandomSkin(ItemDefinition idef)
+        {
+            if(idef.skins.Length < 1 && idef.skins2.Length < 1) return 0;
+            var skins = new List<int>();
+
+            skins.AddRange(from sk in idef.skins select sk.id);
+            skins.AddRange(from sk in idef.skins2 select sk.Id);
+            
+            return ItemDefinition.FindSkin(idef.itemid, skins.GetRandom());
         }
 
 

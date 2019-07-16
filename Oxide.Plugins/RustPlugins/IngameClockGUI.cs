@@ -2,6 +2,12 @@ using System;
 using System.Collections.Generic;
 using Oxide.Core;
 
+
+
+/* TODO:
+ * Remaster the plugin with new UI
+ */
+
 namespace Oxide.Plugins
 {
     [Info("Ingame Clock GUI", "deer_SWAG", "0.0.7", ResourceId = 1245)]

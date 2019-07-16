@@ -2,6 +2,14 @@
 using UnityEngine;
 using Oxide.Core;
 
+<<<<<<< HEAD
+/* TODO:
+ * Limit horses per player
+ * ServerRewards integration
+ * */
+
+=======
+>>>>>>> master
 namespace Oxide.Plugins
 {
     [Info("Where is My Horse", "2CHEVSKII", "0.2.1")]
@@ -84,7 +92,11 @@ namespace Oxide.Plugins
         #region -Core-
 
 
+<<<<<<< HEAD
+        private void SpawnHorse(BasePlayer player, string command, string[] args)
+=======
         private void SpawnHorse(BasePlayer player,string command,string[] args)
+>>>>>>> master
         {
             var escape = !useNoEscape ? null : Interface.CallHook("IsEscapeBlocked", player.UserIDString);
             if(!Cooldowns.ContainsKey(player.userID)) Cooldowns.Add(player.userID, -1f);
@@ -113,4 +125,8 @@ namespace Oxide.Plugins
 
         #endregion
     }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> master

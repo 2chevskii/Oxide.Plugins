@@ -5,6 +5,7 @@ using System.Linq;
 using Oxide.Core;
 using Oxide.Core.Plugins;
 using Newtonsoft.Json;
+using System.Text;
 
 namespace Oxide.Plugins
 {
@@ -12,36 +13,14 @@ namespace Oxide.Plugins
     [Description("Plugin which contains stuff to help me develop other plugins")]
     class DVACHEVSKIIDebugPlugin : RustPlugin
     {
-        //////////////////////////////////////////
-        //// Configuration
-        //////////////////////////////////////////
-        void CheckConfig<T>(string key, ref T value)
+
+        void OnTick()
         {
-            if(Config[key] is T) value = (T)Config[key];
-            else Config[key] = value;
+            if(TOD_Sky.Instance != null)
+            {
+                TOD_Sky.Instance.Cycle.Hour = 9;
+            }
         }
-        void CheckConfigFloat(string key, ref float value)
-        {
-            if(Config[key] is double || Config[key] is int) value = Convert.ToSingle(Config[key]);
-            else Config[key] = value;
-        }
-
-        
-        protected enum WarningType
-        {
-            WrongConfig,
-            InternalError
-        }
-
-        Dictionary<WarningType, string> warnings = new Dictionary<WarningType, string>
-        {
-            { WarningType.WrongConfig, "Cannot read the config file! Is it corrupt? \nGenerating new configuration file..." },
-            { WarningType.InternalError, "Internal plugin error:\n{0}" }
-        };
-
-        void ThrowWarning(WarningType warning, string[] args) => PrintWarning(warnings[warning], args ?? null);
-
-
 
         object Check2chevskii(BasePlayer player)
         {
@@ -53,24 +32,15 @@ namespace Oxide.Plugins
             }
         }
 
-        bool CanCombineDroppedItem(DroppedItem item, DroppedItem targetItem) => false;
-
-        //////////////////////////////////////////
-        //// Get item condition
-        //////////////////////////////////////////
         [ChatCommand("condition")]
         void CmdGetCondition(BasePlayer player)
         {
             if(Check2chevskii(player) != null) return;
-            if(player.GetHeldEntity() != null)
-            {
-                Item item = player?.GetHeldEntity()?.GetItem();
-                if(item != null) SendReply(player, $"{item.info.displayName.english} condition: {item.conditionNormalized * 100}%");
-            }
+            var item = player?.GetActiveItem();
+            if(item != null) SendReply(player, $"{item.info.displayName.english} condition: {item.conditionNormalized * 100}%");
             else
                 SendReply(player, "You do not hold any item right now!");
         }
-        
 
         [ConsoleCommand("rpclist")]
         void PrintRPCList(ConsoleSystem.Arg arg)
@@ -79,45 +49,6 @@ namespace Oxide.Plugins
             arg.ReplyWith(JsonConvert.SerializeObject(dic, Formatting.Indented));
         }
 
-        [ConsoleCommand("count")]
-        void PrinTManifest(ConsoleSystem.Arg arg)
-        {
-            int x = 5;
-            int y = 1;
-            float z = y/x;
-            arg.ReplyWith(z.ToString());
-        }
-
-        
-        [ConsoleCommand("gay")]
-        void Gay(ConsoleSystem.Arg arg)
-        {
-            arg.ReplyWith("\u004f\u0072\u0061\u006e\u0067\u0065 \u0069\u0073 \u0067\u0061\u0079");
-        }
-
-        
-
-        void KillMarkers()
-        {
-            foreach(var marker in vmarkers)
-            {
-                marker.Kill();
-                marker.SendNetworkUpdate();
-            }
-            foreach(var marker in gmarkers)
-            {
-                marker.Kill();
-                marker.SendNetworkUpdate();
-            }
-        }
-
-        List<VendingMachineMapMarker> vmarkers = new List<VendingMachineMapMarker>();
-        List<MapMarkerGenericRadius> gmarkers = new List<MapMarkerGenericRadius>();
-        private const string VENDINGPREFAB = "assets/prefabs/deployable/vendingmachine/vending_mapmarker.prefab";
-        private const string GENERICPREFAB = "assets/prefabs/tools/map/genericradiusmarker.prefab";
-        //////////////////////////////////////////
-        //// Heals player
-        //////////////////////////////////////////
         [ChatCommand("healme")]
         void CmdHealMe(BasePlayer player, string command, string[] args)
         {
@@ -130,111 +61,97 @@ namespace Oxide.Plugins
             player.metabolism.radiation_level.value = player.metabolism.radiation_level.min;
         }
         
-        /////////////////////////////////////////////////////
-        //// Get type of the object you are looking at
-        /////////////////////////////////////////////////////
-        [ChatCommand("gettype")]
-        void CmdGetInfo(BasePlayer player, string command, string[] args)
+        string GetInheritanceTree(Type type)
         {
-            if(Check2chevskii(player) == null)
+            var list = new List<string>();
+            while(type.BaseType != null)
             {
+<<<<<<< HEAD
+                list.Add(type.Name);
+                type = type.BaseType;
+=======
                 RaycastHit raycastHit;
                 if(Physics.Raycast(player.eyes.HeadRay(), out raycastHit))
                     SendReply(player, $"Prefab: {raycastHit.GetEntity()?.PrefabName}\nType: {raycastHit.GetEntity()?.GetType().ToString()}" +
                         $"\nLayer: {raycastHit.collider.gameObject.layer}");
+>>>>>>> master
             }
+            return string.Join(" : ", list);
         }
-        
-        //////////////////////////////////////////
-        //// Replybuilder
-        //////////////////////////////////////////
-        string ReplyBuilder(WarningTypes warningType, Colors color)
+
+        string GetAllComponents(Component obj)
         {
-            string message = "";
-            switch(warningType)
+            if(obj==null)
             {
-                case WarningTypes.NoPermission:
-                    message = "You don't have permission to do that.";
-                    break;
-                case WarningTypes.WrongIndex:
-                    message = "Wrong cupboard index.";
-                    break;
-                case WarningTypes.WrongCommandUsage:
-                    message = "Wrong command usage. Try \"/cupboard help\"";
-                    break;
-                case WarningTypes.Helpmessage:
-                    message = "Helpmessage";
-                    break;
-                default:
-                    message = "Undefined";
-                    break;
+                return "No components";
             }
-            return ColorBuilder(color, message);
+            var list = from c in obj.GetComponents<Component>() select c.GetType().Name;
+            return string.Join(", ", list);
         }
-        string ColorBuilder(Colors color, string input)
+
+        bool GetLookingObject(BasePlayer player, out UnityEngine.Object obj)
         {
-            string colorOpen = "";
-            string colorClose = "";
-            switch(color)
+            var hit = default(RaycastHit);
+            if(Physics.Raycast(ray: player.eyes.HeadRay(), maxDistance: 5f, layerMask: -1, hitInfo: out hit))
             {
-                case Colors.Red:
-                    colorOpen = "<color=red>";
-                    colorClose = "</color>";
-                    break;
-                case Colors.Yellow:
-                    colorOpen = "<color=yellow>";
-                    colorClose = "</color>";
-                    break;
-                case Colors.Green:
-                    colorOpen = "<color=green>";
-                    colorClose = "</color>";
-                    break;
-                case Colors.White:
-                    colorOpen = "<color=white>";
-                    colorClose = "</color>";
-                    break;
-                case Colors.Gray:
-                    colorOpen = "<color=gray>";
-                    colorClose = "</color>";
-                    break;
-                case Colors.Cyan:
-                    colorOpen = "<color=cyan>";
-                    colorClose = "</color>";
-                    break;
-                case Colors.Blue:
-                    colorOpen = "<color=blue>";
-                    colorClose = "</color>";
-                    break;
-                case Colors.NoColor:
-                    colorOpen = "";
-                    colorClose = "";
-                    break;
-                default:
-                    break;
+                obj = hit.GetEntity();
+                return true;
             }
-            return string.Format("{0}{1}{2}", colorOpen, input, colorClose);
+            else
+            {
+                obj = null;
+                return false;
+            }
         }
-        enum WarningTypes
+
+
+
+        [ChatCommand("obj")]
+        void GetObjectInfo(BasePlayer player, string command ,string[] args)
         {
-            NoPermission,
-            WrongIndex,
-            WrongCommandUsage,
-            Helpmessage
+            var obj = default(UnityEngine.Object);
+            if(!GetLookingObject(player, out obj))
+            {
+                player.ChatMessage("No object");
+            }
+            else
+            {
+                var inheritance = GetInheritanceTree(obj.GetType());
+                var components = GetAllComponents(obj as Component);
+
+                player.ChatMessage($@"
+Name: {obj.name};
+---------------------------
+Inheritance: {inheritance};
+---------------------------
+Components: {components};
+---------------------------
+Owner: {(obj as BaseEntity)?.OwnerID}
+");
+            }
         }
-        enum Colors
+
+
+
+
+        void GetObjectInfo(UnityEngine.Object obj)
         {
-            Red,
-            Yellow,
-            Green,
-            White,
-            Gray,
-            Cyan,
-            Blue,
-            NoColor
+
+            var inheritance = GetInheritanceTree(obj.GetType());
+            var components = GetAllComponents(obj as Component);
+
+            BasePlayer.Find("2CHEVSKII").ChatMessage($@"
+Name: {obj.name};
+---------------------------
+Inheritance: {inheritance};
+---------------------------
+Components: {components};
+---------------------------
+Owner: {(obj as BaseEntity)?.OwnerID}
+");
         }
-        
     }
-    
+
 }
 /* FONTS:
  * assets/content/ui/fonts/droidsansmono.ttf

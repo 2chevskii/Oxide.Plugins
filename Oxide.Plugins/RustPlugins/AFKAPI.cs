@@ -13,6 +13,7 @@ using System;
  * [0.1.0] - Initial release
  * [0.1.1] - Fixes
  * [0.1.2] - More fixes
+ * [0.1.3] - Some more fixes
  * */
 
 namespace Oxide.Plugins

@@ -11,7 +11,7 @@ using Newtonsoft.Json;
 namespace Oxide.Plugins
 {
     [Info("Weather to Database", "2CHEVSKII", 0.1)]
-    class WeatherToDatabase : RustPlugin
+    class WeatherDB : RustPlugin
     {
 
         #region [Config and fields]

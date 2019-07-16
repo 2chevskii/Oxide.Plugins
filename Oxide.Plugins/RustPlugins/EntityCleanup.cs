@@ -16,7 +16,10 @@ namespace Oxide.Plugins
     [Description("Easy way to cleanup your server from unnecessary entities")]
     public class EntityCleanup : RustPlugin
     {
+<<<<<<< HEAD
+=======
 
+>>>>>>> master
         #region Fields
 
 
