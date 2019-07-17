@@ -388,24 +388,20 @@
   <ItemGroup>
     <Compile Include="AFKAPI.cs" />
     <Compile Include="AutoFPSLimiter.cs" />
-    <Compile Include="Bank.cs" />
     <Compile Include="DisableDamage.cs" />
     <Compile Include="DVACHEVSKIIDebugPlugin.cs" />
     <Compile Include="EntityCleanup.cs" />
     <Compile Include="GodmodeIndicator.cs" />
+    <Compile Include="GoldenAKChallenge.cs" />
     <Compile Include="HighWallBarricades.cs" />
     <Compile Include="IgnoreCollision.cs" />
-    <Compile Include="ImageLibrary.cs" />
     <Compile Include="IngameClockGUI.cs" />
     <Compile Include="Newbie.cs" />
-    <Compile Include="NoEscape.cs" />
     <Compile Include="NPCDropGun.cs" />
     <Compile Include="PerformanceUI.cs" />
-    <Compile Include="PermissionHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RealisticExplosions.cs" />
     <Compile Include="Replenish.cs" />
-    <Compile Include="Skins.cs" />
     <Compile Include="Telekinesis.cs" />
     <Compile Include="TeleportGun.cs" />
     <Compile Include="TickrateLimiter.cs" />

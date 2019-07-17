@@ -8,15 +8,6 @@ using Random = UnityEngine.Random;
 * Attachments
 */
 
-/* Changelog
-  * [1.3.1] New configuration and option to remove default loot
-  * [1.3.2] Corrected error caused by new config (float values were reset)
-  * [1.3.3] Fixed guns were dropped to the invalid position on Cargoship and OilRigs
-  * [1.4.0] New drop methods, potential NRE fixes, new config
-  * [1.4.1] Code cleanup, BotSpawn NRE fix, code documentation, dropped weapon velocity and rotation tweaked to make them fly more cinematic =)
-  * [1.5.0] Ammo inside dropped weapons now randomized, code cleanup
-  */
-
 namespace Oxide.Plugins
 {
 	[Info("NPC Drop Gun", "2CHEVSKII", "1.6.0")]

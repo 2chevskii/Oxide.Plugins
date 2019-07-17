@@ -4,7 +4,7 @@ using Oxide.Core;
 namespace Oxide.Plugins
 {
 	[Info("Newbie", "2CHEVSKII", "1.0.0")]
-	[Description("Say \"Hello\" to new players!")]
+	[Description("Say 'Hello' to new players!")]
 	internal class Newbie : RustPlugin
 	{
 

@@ -7,8 +7,6 @@ using UnityEngine;
 
 /* TODO:
  * Remaster
- * 
- * 
  * */
 
 namespace Oxide.Plugins

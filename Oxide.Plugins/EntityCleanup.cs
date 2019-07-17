@@ -4,11 +4,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Newtonsoft.Json;
-using Oxide.Core;
 using UnityEngine;
 using Arg = ConsoleSystem.Arg;
-
-//Credits to original plugin authors: Reneb, SPooCK
 
 namespace Oxide.Plugins
 {
@@ -16,9 +13,6 @@ namespace Oxide.Plugins
 	[Description("Easy way to cleanup your server from unnecessary entities")]
 	public class EntityCleanup : RustPlugin
 	{
-<<<<<<< HEAD
-=======
->>>>>>> master
 		#region Fields
 
 

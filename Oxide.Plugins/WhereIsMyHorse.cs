@@ -2,20 +2,13 @@
 using Oxide.Core;
 using UnityEngine;
 
-<<<<<<< HEAD
-/* TODO:
- * Limit horses per player
- * ServerRewards integration
- * */
-
-=======
->>>>>>> master
 namespace Oxide.Plugins
 {
 	[Info("Where is My Horse", "2CHEVSKII", "0.2.1")]
 	[Description("Here is your horse, sir!")]
 	internal class WhereIsMyHorse : RustPlugin
 	{
+
 		#region -Constants and global variables-
 
 
@@ -132,9 +125,7 @@ namespace Oxide.Plugins
 
 
 		#endregion
+
 	}
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> master
+

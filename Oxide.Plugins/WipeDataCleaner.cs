@@ -9,9 +9,18 @@ namespace Oxide.Plugins
 	[Description("Cleans specified data files on new wipe.")]
 	internal class WipeDataCleaner : CovalencePlugin
 	{
-		private OxideMod Mod = Interface.Oxide;
 
+		#region -Fields-
+
+
+		private OxideMod Mod = Interface.Oxide;
 		private PluginSettings Settings { get; set; }
+
+
+		#endregion
+
+		#region -Configuration-
+
 
 		private class PluginSettings
 		{
@@ -49,7 +58,19 @@ namespace Oxide.Plugins
 			}
 		}
 
+
+		#endregion
+
+		#region -Hooks-
+
+
 		private void OnNewSave(string filename) => Wipe(null);
+
+
+		#endregion
+
+		#region -Core-
+
 
 		[Command("wipe"), Permission(nameof(WipeDataCleaner) + ".wipe")]
 		private void Wipe(IPlayer executer)
@@ -69,5 +90,11 @@ namespace Oxide.Plugins
 			}
 			Mod.LoadAllPlugins(false);
 		}
+
+
+		#endregion
+
+
+
 	}
 }

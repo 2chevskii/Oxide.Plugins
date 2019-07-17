@@ -10,9 +10,18 @@ namespace Oxide.Plugins
 	[Description("Limits current maximum tickrate based on player count to improve overall performance")]
 	internal class TickrateLimiter : CovalencePlugin
 	{
+
+		#region -Fields-
+
+
 		private int _defaultClValue;
 		private int _defaultSvValue;
 		private Dictionary<int, TickrateValues> TickrateCurve { get; set; }
+
+
+		#endregion
+
+		#region -Configuration-
 
 
 		private Dictionary<int, TickrateValues> GetDefaultCurve => new Dictionary<int, TickrateValues>
@@ -42,12 +51,6 @@ namespace Oxide.Plugins
 					throw new JsonException("Could not load configuration...");
 
 				Puts("Configuration loaded...");
-
-
-				//if (!TickrateCurve.ContainsKey(-1))
-				//	TickrateCurve.Add(-1, new TickrateValues(16, 20));
-
-				//SaveConfig();
 			}
 			catch
 			{
@@ -60,6 +63,12 @@ namespace Oxide.Plugins
 			Config.WriteObject(TickrateCurve, true);
 		}
 
+
+		#endregion
+
+		#region -Hooks-
+
+
 		private void OnServerInitialized()
 		{
 			_defaultClValue = Player.tickrate_cl;
@@ -67,7 +76,6 @@ namespace Oxide.Plugins
 
 			OnPlayerCountUpdate();
 		}
-
 
 		private void OnPlayerInit()
 		{
@@ -78,6 +86,17 @@ namespace Oxide.Plugins
 		{
 			NextTick(() => OnPlayerCountUpdate());
 		}
+
+		private void Unload()
+		{
+			Player.tickrate_sv = _defaultSvValue;
+			Player.tickrate_cl = _defaultClValue;
+		}
+
+
+		#endregion
+
+		#region -Functions-
 
 
 		private void OnPlayerCountUpdate()
@@ -97,11 +116,9 @@ namespace Oxide.Plugins
 		}
 
 
-		private void Unload()
-		{
-			Player.tickrate_sv = _defaultSvValue;
-			Player.tickrate_cl = _defaultClValue;
-		}
+		#endregion
+
+		#region -Component-
 
 
 		private class TickrateValues
@@ -114,6 +131,10 @@ namespace Oxide.Plugins
 				this.Server = server;
 				this.Client = client;
 			}
-		}
+		}	
+
+
+		#endregion
+
 	}
 }

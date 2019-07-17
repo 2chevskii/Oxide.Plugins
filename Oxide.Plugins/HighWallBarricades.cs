@@ -6,19 +6,6 @@ using Oxide.Core;
 using Rust;
 using UnityEngine;
 
-
-/* TODO:
- * optimize the plugin using coroutines
- */
-
-/* TODO:
- * [x] Make option for other barricades
- * [x] Make option to check for authorization of player who placed barricade
- * [-] Make option to upkeep the wall as other building blocks
- */
-
-// Original idea and plugin version => Guilty Spark
-
 namespace Oxide.Plugins
 {
 	[Info("HighWallBarricades", "2CHEVSKII", "2.2.3")]

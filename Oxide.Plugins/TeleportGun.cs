@@ -9,7 +9,7 @@ namespace Oxide.Plugins
 	internal class TeleportGun : RustPlugin
 	{
 
-		#region [Hooks]
+		#region -Hooks-
 
 
 		private void Init()
@@ -42,7 +42,7 @@ namespace Oxide.Plugins
 
 		#endregion
 
-		#region [Fields]
+		#region -Fields-
 
 
 		private bool autodisable = true;
@@ -65,7 +65,7 @@ namespace Oxide.Plugins
 
 		#endregion
 
-		#region [Command]
+		#region -Command-
 
 
 		[ChatCommand("tpgun")]
@@ -106,7 +106,7 @@ namespace Oxide.Plugins
 
 		#endregion
 
-		#region [Helpers]
+		#region -Helpers-
 
 
 		private void LoadConfigVariables()

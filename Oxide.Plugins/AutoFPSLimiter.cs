@@ -1,11 +1,6 @@
 using System.Linq;
 using static UnityEngine.Application;
 
-/* Auto FPS Limiter by 2CHEVSKII
- * Plugins uses original idea of Wulf https://umod.org/user/Wulf
- * Modified to work faster, now only compatible with RUST (I don't need other games to be here)
- * */
-
 namespace Oxide.Plugins
 {
 	[Info("Auto FPS Limiter", "2CHEVSKII", "1.0.0")]

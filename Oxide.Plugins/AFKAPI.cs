@@ -5,17 +5,6 @@ using System.Linq;
 using Newtonsoft.Json;
 using UnityEngine;
 
-/* AFK API -> Public Rust Plugin
- * Author -> 2CHEVSKII :
- * : https://umod.org/user/2CHEVSKII 
- * : https://github.com/2chevskii/ 
- * Changelog:
- * [0.1.0] - Initial release
- * [0.1.1] - Fixes
- * [0.1.2] - More fixes
- * [0.1.3] - Some more fixes
- * */
-
 namespace Oxide.Plugins
 {
 	[Info("AFK API", "2CHEVSKII", "0.1.3")]

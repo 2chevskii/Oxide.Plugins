@@ -7,8 +7,6 @@ using Oxide.Game.Rust.Cui;
 using UnityEngine;
 using static Oxide.Game.Rust.Cui.CuiHelper;
 
-// Original idea and plugin version => Gimax
-
 namespace Oxide.Plugins
 {
 	[Info("Godmode Indicator", "2CHEVSKII", "2.0.3")]
