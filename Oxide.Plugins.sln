@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.572
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29102.190
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Oxide.Plugins", "Oxide.Plugins\Oxide.Plugins.csproj", "{3CEB85F2-204B-4C58-95AD-4580FA908732}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Oxide.Plugins", "Oxide.Plugins\Oxide.Plugins.csproj", "{58DBEB79-5AA3-4280-BE8D-7CFAD9D9DF51}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,10 +11,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{3CEB85F2-204B-4C58-95AD-4580FA908732}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3CEB85F2-204B-4C58-95AD-4580FA908732}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3CEB85F2-204B-4C58-95AD-4580FA908732}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3CEB85F2-204B-4C58-95AD-4580FA908732}.Release|Any CPU.Build.0 = Release|Any CPU
+		{58DBEB79-5AA3-4280-BE8D-7CFAD9D9DF51}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{58DBEB79-5AA3-4280-BE8D-7CFAD9D9DF51}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{58DBEB79-5AA3-4280-BE8D-7CFAD9D9DF51}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{58DBEB79-5AA3-4280-BE8D-7CFAD9D9DF51}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
