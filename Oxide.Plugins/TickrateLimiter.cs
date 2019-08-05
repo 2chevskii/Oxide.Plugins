@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 
 namespace Oxide.Plugins
 {
-	[Info("Tickrate Limiter", "2CHEVSKII", "0.1.0")]
+	[Info("Tickrate Limiter", "2CHEVSKII", "0.1.1")]
 	[Description("Limits current maximum tickrate based on player count to improve overall performance")]
 	internal class TickrateLimiter : CovalencePlugin
 	{
@@ -26,9 +26,9 @@ namespace Oxide.Plugins
 
 		private Dictionary<int, TickrateValues> GetDefaultCurve => new Dictionary<int, TickrateValues>
 		{
-			{0, new TickrateValues(16, 20)},
-			{50, new TickrateValues(10, 15)},
-			{150, new TickrateValues(5, 5)}
+			{0, new TickrateValues(20, 30)},
+			{50, new TickrateValues(16, 20)},
+			{150, new TickrateValues(5, 10)}
 		};
 
 		protected override void LoadDefaultConfig()

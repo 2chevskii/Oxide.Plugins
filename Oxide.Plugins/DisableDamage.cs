@@ -3,7 +3,7 @@ using Oxide.Core;
 
 namespace Oxide.Plugins
 {
-	[Info("Disable Damage", "2CHEVSKII", "0.3.0")]
+	[Info("Disable Damage", "2CHEVSKII", "0.3.1")]
 	[Description("Players with permission can disable damage for other players")]
 	internal class DisableDamage : RustPlugin
 	{
@@ -198,7 +198,7 @@ namespace Oxide.Plugins
 								|| (entity is BuildingBlock && disStructdmg)
 								|| ((entity.GetComponent<Deployable>() != null) && disStructdmg)
 								|| (entity.PrefabName.Contains("barrel") && disBarreldmg)
-								|| (entity is BaseHelicopter)
+								|| (entity is BaseHelicopter && disHelidmg)
 								|| (entity is MiniCopter || entity is MotorBoat) && disTransportdmg))
 				{
 					info.damageTypes.ScaleAll(0);

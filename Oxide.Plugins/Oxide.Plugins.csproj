@@ -25,6 +25,7 @@
     <WarningLevel>4</WarningLevel>
     <LangVersion>6</LangVersion>
     <Prefer32Bit>false</Prefer32Bit>
+    <CodeAnalysisRuleSet>Oxide.Plugins.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -34,6 +35,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
+    <CodeAnalysisRuleSet>Oxide.Plugins.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="ApexAI">
@@ -408,6 +410,9 @@
     <Compile Include="WeatherDB.cs" />
     <Compile Include="WhereIsMyHorse.cs" />
     <Compile Include="WipeDataCleaner.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Oxide.Plugins.ruleset" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

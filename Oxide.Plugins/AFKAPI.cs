@@ -469,6 +469,7 @@ namespace Oxide.Plugins
 		#region -Nested classes-
 
 
+
 		/// <summary>
 		/// Stores data and realizes position and rotation checks for tracked by API players
 		/// </summary>

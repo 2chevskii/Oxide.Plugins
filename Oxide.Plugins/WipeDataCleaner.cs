@@ -1,6 +1,9 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using Newtonsoft.Json;
 using Oxide.Core;
+using Oxide.Core.Configuration;
 using Oxide.Core.Libraries.Covalence;
 
 namespace Oxide.Plugins
@@ -9,12 +12,20 @@ namespace Oxide.Plugins
 	[Description("Cleans specified data files on new wipe.")]
 	internal class WipeDataCleaner : CovalencePlugin
 	{
+		#region -Hooks-
+
+
+		private void OnNewSave(string filename) => Wipe(null);
+
+
+		#endregion
 
 		#region -Fields-
 
 
 		private OxideMod Mod = Interface.Oxide;
 		private PluginSettings Settings { get; set; }
+		private List<string> FilesToWipe { get; set; }
 
 
 		#endregion
@@ -31,13 +42,14 @@ namespace Oxide.Plugins
 		protected override void LoadDefaultConfig()
 		{
 			Config.Clear();
+
 			Settings = new PluginSettings {
-				FileNames = new List<string>
-				{
+				FileNames = new List<string> {
 					"somefile",
 					"AnotherFile"
 				}
 			};
+
 			SaveConfig();
 		}
 
@@ -46,11 +58,12 @@ namespace Oxide.Plugins
 		protected override void LoadConfig()
 		{
 			base.LoadConfig();
+
 			try
 			{
 				Settings = Config.ReadObject<PluginSettings>();
-				if(Settings == null || Settings.FileNames == null)
-					throw new JsonException();
+
+				if(Settings == null || Settings.FileNames == null) throw new JsonException();
 			}
 			catch
 			{
@@ -61,40 +74,61 @@ namespace Oxide.Plugins
 
 		#endregion
 
-		#region -Hooks-
-
-
-		private void OnNewSave(string filename) => Wipe(null);
-
-
-		#endregion
-
 		#region -Core-
 
 
-		[Command("wipe"), Permission(nameof(WipeDataCleaner) + ".wipe")]
+		[Command("wipe")] [Permission(nameof(WipeDataCleaner) + ".wipe")]
 		private void Wipe(IPlayer executer)
 		{
-			Mod.UnloadAllPlugins(new List<string>
-			{
+			FilesToWipe = DetermineFilesToWipe().ToList<string>();
+
+			Mod.UnloadAllPlugins(new List<string> {
 				nameof(WipeDataCleaner)
 			});
-			foreach(string file in Settings.FileNames)
-			{
-				if(Interface.Oxide.DataFileSystem.ExistsDatafile(file))
-				{
-					Interface.Oxide.DataFileSystem.GetFile(file).Clear();
-					Interface.Oxide.DataFileSystem.GetFile(file).Save();
-					executer?.Message($"Wiped \"{file}.json\"");
-				}
-			}
+
+			foreach(string file in FilesToWipe) executer?.Message(WipeFile(file));
 			Mod.LoadAllPlugins(false);
+		}
+
+		private IEnumerable<string> DetermineFilesToWipe()
+		{
+			Dictionary<string, DynamicConfigFile> allDataFiles = typeof(DataFileSystem).GetField("_datafiles", BindingFlags.NonPublic | BindingFlags.Instance)
+			                                                                           .GetValue(Interface.Oxide.DataFileSystem) as Dictionary<string, DynamicConfigFile>;
+
+			List<string> list = new List<string>();
+
+			foreach(string fileName in Settings.FileNames)
+			{
+				if(string.IsNullOrEmpty(fileName) || string.IsNullOrWhiteSpace(fileName)) continue;
+
+				if(!fileName.Contains("*"))
+				{
+					list.Add(fileName);
+
+					continue;
+				}
+
+				if(fileName.Length == 1) list.AddRange(allDataFiles.Keys.Where(x => !x.StartsWith("oxide.")));
+				else list.AddRange(allDataFiles.Keys.Where(x => x.StartsWith(fileName.TrimEnd('*'))));
+			}
+
+			return list.Distinct();
+		}
+
+		private string WipeFile(string file)
+		{
+			if(Interface.Oxide.DataFileSystem.ExistsDatafile(file))
+			{
+				Interface.Oxide.DataFileSystem.GetFile(file).Clear();
+				Interface.Oxide.DataFileSystem.GetFile(file).Save();
+
+				return $"Wiped '{file}.json'";
+			}
+
+			return $"Could not find '{file}.json'";
 		}
 
 
 		#endregion
-
-
-
 	}
 }
