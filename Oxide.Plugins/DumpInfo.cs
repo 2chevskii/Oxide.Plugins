@@ -56,12 +56,15 @@ namespace Oxide.Plugins
 
 		void OnServerInitialized()
 		{
-			GetLayers();
-			GetItems();
-			GetTextures();
-			GetPrefabs();
-			Dump();
-			server.Command("quit");
+			timer.Once(5f, () =>
+			{
+				GetLayers();
+				GetItems();
+				GetTextures();
+				GetPrefabs();
+				Dump();
+				server.Command("quit");
+			});
 		}
 
 		void Dump()
