@@ -56,7 +56,7 @@ namespace Oxide.Plugins
 
 		void OnServerInitialized()
 		{
-			timer.Once(5f, () =>
+			try
 			{
 				GetLayers();
 				GetItems();
@@ -64,7 +64,11 @@ namespace Oxide.Plugins
 				GetPrefabs();
 				Dump();
 				server.Command("quit");
-			});
+			}
+			catch
+			{
+				timer.Once(10f, OnServerInitialized);
+			}
 		}
 
 		void Dump()
