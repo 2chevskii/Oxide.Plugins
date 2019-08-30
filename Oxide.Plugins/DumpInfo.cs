@@ -19,8 +19,6 @@ namespace Oxide.Plugins
 
 		private List<RustItem> Items = new List<RustItem>();
 
-		private List<string> Materials = new List<string>();
-
 		private List<string> Textures = new List<string>();
 
 		private List<string> Prefabs = new List<string>();
@@ -77,7 +75,6 @@ namespace Oxide.Plugins
 			{
 				Items = Items,
 				Layers = Layers,
-				Materials = Materials,
 				Prefabs = Prefabs,
 				Textures = Textures
 			};
@@ -86,7 +83,6 @@ namespace Oxide.Plugins
 
 			var layersMD = ConvertToMarkdown("layers", Layers);
 			var itemsMD = ConvertToMarkdown("items", Items);
-			var materialsMD = ConvertToMarkdown("mat", Materials);
 			var texturesMD = ConvertToMarkdown("tex", Textures);
 			var prefabsMD = ConvertToMarkdown("pref", Prefabs);
 			var skinsMD = ConvertToMarkdown("skin", Items);
@@ -95,7 +91,6 @@ namespace Oxide.Plugins
 
 			LogToFile($"DumpInfoMD_Layers_{Protocol.printable}_{BuildInfo.Current.Scm.Branch}", layersMD, this, false);
 			LogToFile($"DumpInfoMD_Items_{Protocol.printable}_{BuildInfo.Current.Scm.Branch}", itemsMD, this, false);
-			LogToFile($"DumpInfoMD_Materials_{Protocol.printable}_{BuildInfo.Current.Scm.Branch}", materialsMD, this, false);
 			LogToFile($"DumpInfoMD_Textures_{Protocol.printable}_{BuildInfo.Current.Scm.Branch}", texturesMD, this, false);
 			LogToFile($"DumpInfoMD_Prefabs_{Protocol.printable}_{BuildInfo.Current.Scm.Branch}", prefabsMD, this, false);
 			LogToFile($"DumpInfoMD_Skins_{Protocol.printable}_{BuildInfo.Current.Scm.Branch}", skinsMD, this, false);
@@ -141,15 +136,6 @@ namespace Oxide.Plugins
 						{
 							builder.AppendLine($"{skin.Value} | {skin.Key}");
 						}
-					}
-					break;
-
-				case "mat":
-					builder.AppendLine("`Path` |");
-					builder.AppendLine("--- |");
-					foreach(var mat in obj as List<string>)
-					{
-						builder.AppendLine($"{mat} |");
 					}
 					break;
 
