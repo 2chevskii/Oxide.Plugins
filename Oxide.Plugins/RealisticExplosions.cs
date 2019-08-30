@@ -2,13 +2,13 @@
 using UnityEngine;
 
 /* TODO:
- - Attach to rockets
+ - Attach to rockets ✔
  - Detect non-exploded grenades/satchels
  */
 
 namespace Oxide.Plugins
 {
-	[Info("Realistic Explosions", "2CHEVSKII", "0.1.1")]
+	[Info("Realistic Explosions", "2CHEVSKII", "0.2.1")]
 	[Description("Pushes back dropped items when they are near the explosion")]
 	internal class RealisticExplosions : RustPlugin
 	{
@@ -19,6 +19,8 @@ namespace Oxide.Plugins
 		private void OnExplosiveDropped(BasePlayer player, BaseEntity entity, ThrownWeapon item) => entity.gameObject.AddComponent<ExplosionComponent>();
 
 		private void OnExplosiveThrown(BasePlayer player, BaseEntity entity, ThrownWeapon item) => entity.gameObject.AddComponent<ExplosionComponent>();
+
+		private void OnRocketLaunched(BasePlayer player, BaseEntity entity) => entity.gameObject.AddComponent<ExplosionComponent>();
 
 
 		#endregion

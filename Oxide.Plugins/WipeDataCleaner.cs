@@ -8,12 +8,24 @@ using Oxide.Core.Libraries.Covalence;
 
 namespace Oxide.Plugins
 {
-	[Info("Wipe Data Cleaner", "2CHEVSKII", "1.1.0")]
+	[Info("Wipe Data Cleaner", "2CHEVSKII", "1.3.0")]
 	[Description("Cleans specified data files on new wipe.")]
 	internal class WipeDataCleaner : CovalencePlugin
 	{
 		#region -Hooks-
 
+
+		private void Init()
+		{
+			permission.RegisterPermission(nameof(WipeDataCleaner).ToLower() + ".wipe", this);
+
+			covalence.RegisterCommand(Settings.Command ?? "wipe", this,
+			(player, command, args) =>
+			{
+				Wipe(player);
+				return true;
+			});
+		}
 
 		private void OnNewSave(string filename) => Wipe(null);
 
@@ -35,8 +47,11 @@ namespace Oxide.Plugins
 
 		private class PluginSettings
 		{
-			[JsonProperty(PropertyName = "Filenames, without .json")]
+			[JsonProperty("Filenames, without .json")]
 			public List<string> FileNames { get; set; }
+
+			[JsonProperty("Command (default: 'wipe')")]
+			public string Command { get; set; }
 		}
 
 		protected override void LoadDefaultConfig()
@@ -47,7 +62,8 @@ namespace Oxide.Plugins
 				FileNames = new List<string> {
 					"somefile",
 					"AnotherFile"
-				}
+				},
+				Command = "wipe"
 			};
 
 			SaveConfig();
@@ -77,7 +93,7 @@ namespace Oxide.Plugins
 		#region -Core-
 
 
-		[Command("wipe")] [Permission(nameof(WipeDataCleaner) + ".wipe")]
+		//[Command("wipe"), Permission(nameof(WipeDataCleaner) + ".wipe")] 
 		private void Wipe(IPlayer executer)
 		{
 			FilesToWipe = DetermineFilesToWipe().ToList<string>();

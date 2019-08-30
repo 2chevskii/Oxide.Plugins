@@ -9,7 +9,7 @@ using Arg = ConsoleSystem.Arg;
 
 namespace Oxide.Plugins
 {
-	[Info("Entity Cleanup", "2CHEVSKII", "3.0.0")]
+	[Info("Entity Cleanup", "2CHEVSKII", "3.0.2")]
 	[Description("Easy way to cleanup your server from unnecessary entities")]
 	public class EntityCleanup : RustPlugin
 	{
@@ -196,6 +196,16 @@ namespace Oxide.Plugins
 					Puts("Skipped not a baseEntity");
 #endif
 					yield return new WaitForEndOfFrame();
+					continue;
+				}
+
+				if(baseEntity.OwnerID == 0)
+				{
+					#if(DEBUG)
+					Puts("Skipped baseEntity without ownerid");
+					#endif
+					yield return new WaitForEndOfFrame();
+
 					continue;
 				}
 

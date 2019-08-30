@@ -38,7 +38,7 @@ namespace Oxide.Plugins
 				Replier(player, disabled);
 			}
 		}
-
+		
 
 		#endregion
 

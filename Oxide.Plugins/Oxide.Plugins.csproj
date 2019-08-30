@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Oxide.Plugins</RootNamespace>
     <AssemblyName>Oxide.Plugins</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <TargetFrameworkProfile>
@@ -391,6 +391,7 @@
     <Compile Include="AFKAPI.cs" />
     <Compile Include="AutoFPSLimiter.cs" />
     <Compile Include="DisableDamage.cs" />
+    <Compile Include="DumpInfo.cs" />
     <Compile Include="DVACHEVSKIIDebugPlugin.cs" />
     <Compile Include="EntityCleanup.cs" />
     <Compile Include="GodmodeIndicator.cs" />
@@ -399,6 +400,7 @@
     <Compile Include="IgnoreCollision.cs" />
     <Compile Include="IngameClockGUI.cs" />
     <Compile Include="Newbie.cs" />
+    <Compile Include="NoClipRestrictions.cs" />
     <Compile Include="NPCDropGun.cs" />
     <Compile Include="PerformanceUI.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

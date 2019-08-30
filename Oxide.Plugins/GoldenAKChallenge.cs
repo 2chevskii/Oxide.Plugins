@@ -1,492 +1,646 @@
-
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Facepunch;
-using JetBrains.Annotations;
-using Oxide.Core;
-using Oxide.Core.Configuration;
-using Oxide.Core.Plugins;
+using Facepunch.Extend;
+using Newtonsoft.Json;
+using Oxide.Game.Rust;
+using Oxide.Game.Rust.Cui;
 using Rust;
 using UnityEngine;
-
+using UnityEngine.UI;
+using Random = UnityEngine.Random;
 
 namespace Oxide.Plugins
 {
-    [Info("GoldenAKChallenge", "Lamego", "0.0.2")]
-
-    class GoldenAKChallenge : RustPlugin
-    {
-
-        [PluginReference]
-        private Plugin GUIAnnouncements;
-
-        const int AK_ITEM_ID = -1461508848;
-        const ulong GOLDEN_AK_SKIN_ID = 1167207039;
-
-        private static GoldenAKChallenge plugin;
-
-        #region AK tracking
-        private BasePlayer holdingPlayer = null;    
-        private DroppedItem droppedAK = null;    /* We need to keep this to destroy the tracker  */
-        private Item goldenAK = null;
-        private StorageContainer containerAK = null;
-        private ulong currentOwnerID = 0;   /* UID of the last user holding the AK */
-        private static MapMarkerGenericRadius mapMarker = null;
-        #endregion
-
-        #region Game Data
-        class StoredData
-        {
-            public ulong currentOwnerID = 0;
-            public uint  AK_ID = 0;
-            public StoredData()
-            {
-            }
-        }        
-        StoredData gameData;
-        #endregion
-
-        Vector3 lastMarkerPos = Vector3.zero;   
-        private Timer _timer;
-
-        private class Tracker : MonoBehaviour
-        {
-            Transform targetTansform;
-            float lastX = 0;
-            float lastZ = 0;
-
-            private void Awake()
-            {
-                targetTansform = gameObject.transform;
-            }
-
-            private void Update()
-            {
-                float currentX = targetTansform.position.x;
-                float currentZ = targetTansform.position.z;
-                if(targetTansform.hasChanged && ((currentX != lastX) || (currentZ != lastZ)))
-                {
-                    plugin.SetMapMarker(targetTansform.position);
-                    lastX = currentX;
-                    lastZ = currentZ;
-                }
-            }
-        }   
-
-        StorageContainer CreateLargeBox(Vector3 position)
-        {
-            const string boxShortname = "box.wooden.large";
-            const string boxPrefab = "assets/prefabs/deployable/large wood storage/box.wooden.large.prefab";        
-            ItemDefinition boxDef = ItemManager.FindItemDefinition(boxShortname);                
-            StorageContainer box = GameManager.server.CreateEntity(boxPrefab, position, new Quaternion(), true) as StorageContainer;            
-            box.Spawn();
-            return box;
-        }
-
-        public Vector3 GetEventPosition()
-        {
-            int maxRetries = 500;
-            Vector3 localeventPos;
-
-            int blockedMask = LayerMask.GetMask(new[] { "Player (Server)", "Trigger", "Prevent Building" });
-            List<int> BlockedLayers = new List<int> { (int)Layer.Water, (int)Layer.Construction, (int)Layer.Trigger, (int)Layer.Prevent_Building, (int)Layer.Deployed, (int)Layer.Tree };
-
-            List<Vector3> monuments = new List<Vector3>(); // positions of monuments on the server
-            monuments = UnityEngine.Object.FindObjectsOfType<MonumentInfo>().Select(monument => monument.transform.position).ToList();
-
-            do
-            {                
-                localeventPos = GetSafeDropPosition(RandomDropPosition());
-
-                if (Interface.CallHook("OnGAKOpen",localeventPos) != null)
-                {
-                    localeventPos = Vector3.zero;
-                    continue;
-                }
-
-                foreach (var monument in monuments)
-                {
-                    if (Vector3.Distance(localeventPos, monument) < 150f) // don't put the treasure chest near a monument
-                    {
-                        localeventPos = Vector3.zero;
-                        break;
-                    }
-                }
-            } while (localeventPos == Vector3.zero && --maxRetries > 0);
-
-            return localeventPos;
-        }
-
-        public Vector3 GetSafeDropPosition(Vector3 position)
-        {
-            var eventRadius = 25f; /* */
-            RaycastHit hit;
-            position.y += 200f;
-            int blockedMask = LayerMask.GetMask(new[] { "Player (Server)", "Trigger", "Prevent Building" });
-            List<int> BlockedLayers = new List<int> { (int)Layer.Water, (int)Layer.Construction, (int)Layer.Trigger, (int)Layer.Prevent_Building, (int)Layer.Deployed, (int)Layer.Tree };
-
-            if (Physics.Raycast(position, Vector3.down, out hit))
-            {
-                if (!BlockedLayers.Contains(hit.collider?.gameObject?.layer ?? BlockedLayers[0]))
-                {
-                    position.y = Mathf.Max(hit.point.y, TerrainMeta.HeightMap.GetHeight(position));
-
-                    var colliders = Pool.GetList<Collider>();
-                    Vis.Colliders(position, eventRadius, colliders, blockedMask, QueryTriggerInteraction.Collide);
-
-                    bool blocked = colliders.Count > 0;
-
-                    Pool.FreeList<Collider>(ref colliders);
-
-                    if (!blocked)
-                        return position;
-                }
-            }
-
-            return Vector3.zero;
-        }
-
-        public Vector3 RandomDropPosition() // CargoPlane.RandomDropPosition()
-        {
-            var vector = Vector3.zero;
-            SpawnFilter filter = new SpawnFilter();
-
-            float num = 100f, x = TerrainMeta.Size.x / 3f;
-            do
-            {
-                vector = Vector3Ex.Range(-x, x);
-            }
-            while (filter.GetFactor(vector) == 0f && (num -= 1f) > 0f);
-            vector.y = 0f;
-            return vector;
-        }
-
-
-
-        public Vector3 GAKChestEvent(BasePlayer player = null) {
-            Vector3 eventPos;
-            var randomPos = GetEventPosition();                        
-            if (randomPos == Vector3.zero)
-            {
-                PrintError("Unable to spaw randomPos");
-                return Vector3.zero;
-            }
-
-            eventPos = randomPos;
-            Puts("Spawned Golden AK box at "+eventPos.ToString());
-
-            StorageContainer container = CreateLargeBox(eventPos);        
-            if (!container)
-            {
-                PrintError("Unable to spaw container");
-                return Vector3.zero;
-            }
-
-            goldenAK = ItemManager.CreateByItemID(AK_ITEM_ID, 1);     
-            var weapon = goldenAK.GetHeldEntity() as BaseProjectile;                   
-            ulong skin_id = 0;
-            skin_id = GOLDEN_AK_SKIN_ID;
-            goldenAK.skin = skin_id;                
-            if (goldenAK.GetHeldEntity() != null) 
-            { 
-                goldenAK.GetHeldEntity().skinID  = skin_id;
-            }
-            container.inventory.Clear();
-            weapon.primaryMagazine.contents = weapon.primaryMagazine.capacity;
-            weapon.SendNetworkUpdateImmediate();            
-            goldenAK.MoveToContainer(container.inventory, -1, true);                        
-            container.inventory.MarkDirty();      
-            containerAK = container;
-            containerAK.gameObject.AddComponent<Tracker>();
-            return container.transform.position;
-        }
-
-        object OnItemPickup(Item item, BasePlayer player)        
-        {
-
-            if(item != goldenAK)   /* We only care about our ak */
-                return null;
-
-            DestroyAnyTracker();
-            holdingPlayer = player;
-            containerAK = null;
-            holdingPlayer.gameObject.AddComponent<Tracker>();            
-
-            if(player.userID != currentOwnerID)                      
-            {
-                currentOwnerID = player.userID;    
-                string msg = Lang("NotAllowedPerm", player.displayName);
-                GUIAnnouncements?.Call("CreateAnnouncement", msg, "gray", "white", player);
-            }            
-            
-            return null;
-        }
-
-        void OnItemDropped(Item item, BaseEntity entity)
-        {
-
-            if(item == goldenAK)
-            {
-                DestroyAnyTracker();                
-                holdingPlayer = null;
-                droppedAK = FindOnDroppedItems(item.uid);
-                droppedAK.gameObject.AddComponent<Tracker>();
-            }
-        }
-        
-
-        void OnLootEntityEnd(BasePlayer player, BaseCombatEntity entity)
-        {
-            foreach (Item i in player.inventory.FindItemIDs(AK_ITEM_ID))
-            {
-                if(i == goldenAK)
-                {               
-                    DestroyAnyTracker();                    
-                    holdingPlayer = player;           
-                    holdingPlayer.gameObject.AddComponent<Tracker>();   
-                    containerAK = null;
-                    if(player.userID != currentOwnerID) { /* Owner change */
-                        currentOwnerID = player.userID;                    
-                        string msg = Lang("Picked", player.UserIDString, player.displayName);
-                        GUIAnnouncements?.Call("CreateAnnouncement", msg, "gray", "white", player);
-                    }
-                    return;                    
-                }
-            }    
-
-            // Holding player no longer holds it
-            if (player == holdingPlayer)
-            {
-                if(entity is StorageContainer)
-                {                    
-                    DestroyAnyTracker();                    
-                    containerAK = entity as StorageContainer;
-                    containerAK.gameObject.AddComponent<Tracker>();
-                    holdingPlayer = null;
-                }
-            }
-
-        }
-
-        // Don't allow AK to be placed on destrutible containers
-        object CanAcceptItem(ItemContainer container, Item item)
-        {
-            if(item == goldenAK)
-            {
-                var entityOwner = container.entityOwner;
-                if(entityOwner is Recycler || entityOwner is ResearchTable || entityOwner is LootContainer )
-                    return ItemContainer.CanAcceptResult.CannotAccept;
-            }
-            return null;
-        }
-
-        DroppedItem FindOnDroppedItems(uint uid)
-        {
-            var dropped_items = UnityEngine.Object.FindObjectsOfType<DroppedItem>();
-            foreach(DroppedItem item in dropped_items)
-            {
-                if(item.GetItem().uid == uid)
-                {
-                    return item;
-                }
-            }
-            return null;
-        }
-
-
-        void OnEntityDeath(BaseCombatEntity victim, HitInfo info)        
-        {
-            if(holdingPlayer == null)
-                return;
-
-            var corpse = victim as BaseCorpse;
-            var player = victim.ToPlayer();
-            
-            if (player == holdingPlayer)
-            {
-                DestroyAnyTracker();
-                SetMapMarker(player.transform.position);
-                holdingPlayer = null;
-            }  
-        }
-
-        void OnServerInitialized()
-        {
-
-            plugin = this;       
-            UpdateTrackingObjects();
-
-            if(goldenAK == null)
-            {
-                // Started a new game
-                GAKChestEvent();
-            } else
-                Puts("Resumed game from data");
-            _timer = timer.Every(1, MapMarkerRefresh);
-        }
-
-        private void MapMarkerRefresh()
-        {
-            UpdateMarker(lastMarkerPos);
-        }
-
-        private void UpdateTrackingObjects()
-        {
-            currentOwnerID = gameData.currentOwnerID;
-            if(gameData.AK_ID == 0)
-                return;
-
-            DestroyAnyTracker();
-
-            // Search the AK on actives players inventory
-            foreach(BasePlayer player in BasePlayer.activePlayerList)
-            {
-                foreach (Item i in player.inventory.FindItemIDs(AK_ITEM_ID))
-                {
-                    if(i.uid == gameData.AK_ID)
-                    {
-                        Puts("Found player holding AK ");
-                        holdingPlayer = player;                        
-                        holdingPlayer.gameObject.AddComponent<Tracker>();
-                        currentOwnerID = player.userID;
-                        goldenAK = i;
-                        containerAK = null;
-                        droppedAK = null;
-                        return;
-                    }
-                }
-            }
-
-            // Search the AK on sleeping players inventory
-            foreach(BasePlayer player in BasePlayer.sleepingPlayerList)
-            {
-                foreach (Item i in player.inventory.FindItemIDs(AK_ITEM_ID))
-                {
-                    if(i.uid == gameData.AK_ID)
-                    {
-                        Puts("Found sleeping player holding AK");                        
-                        holdingPlayer = player;                        
-                        holdingPlayer.gameObject.AddComponent<Tracker>();
-                        currentOwnerID = player.userID;
-                        goldenAK = i;
-                        containerAK = null;
-                        droppedAK = null;
-                        return;
-                    }
-                }
-            }
-
-            // Search the AK on dropped items
-            droppedAK = FindOnDroppedItems(gameData.AK_ID);
-            if(droppedAK != null)
-            {
-                Puts("Found AK on droppedItem");
-                droppedAK.gameObject.AddComponent<Tracker>();
-                goldenAK = droppedAK.GetItem();          
-                holdingPlayer = null;
-                containerAK = null;
-                return;
-            }
-
-            // Search the AK on containers
-            foreach(StorageContainer container in UnityEngine.Object.FindObjectsOfType<StorageContainer>())
-            {
-                foreach (Item i in container.inventory.FindItemsByItemID(AK_ITEM_ID))
-                {
-                    if(i.uid == gameData.AK_ID)
-                    {
-                        Puts("Found AK on container");
-                        containerAK = container;                        
-                        containerAK.gameObject.AddComponent<Tracker>();
-                        currentOwnerID = gameData.currentOwnerID;
-                        holdingPlayer = null;
-                        goldenAK = i;
-                        return;
-                    }
-                }
-            }
-        }    
-
-        private void SetMapMarker(Vector3 position)
-        {
-            lastMarkerPos = position;
-        }
-
-        private void UpdateMarker(Vector3 position)
-        {
-            mapMarker?.Kill();
-            mapMarker = GameManager.server.CreateEntity("assets/prefabs/tools/map/genericradiusmarker.prefab", position) as MapMarkerGenericRadius;
-            mapMarker.alpha = 0.8f;
-            mapMarker.color1 = Color.red;
-            mapMarker.color2 = Color.red;
-            mapMarker.radius = 2;
-            mapMarker.Spawn();
-            mapMarker.SendUpdate();
-        }       
-
-        void DestroyAnyTracker() 
-        {
-            SetMapMarker(Vector3.zero);
-            Tracker tracker = containerAK?.GetComponent<Tracker>() ?? holdingPlayer?.GetComponent<Tracker>() ?? droppedAK?.GetComponent<Tracker>();
-            if (tracker != null)
-                UnityEngine.Object.Destroy(tracker);
-        }
-
-        private new void LoadDefaultMessages()
-        {
-            // English
-            lang.RegisterMessages(new Dictionary<string, string>
-            {
-                ["Picked"] = "The Golden AK was picked by {0}",
-            }, this);
-        }
-
-        private void SaveData()
-        {
-            gameData.currentOwnerID = currentOwnerID;            
-            gameData.AK_ID = goldenAK.uid;
-            Interface.Oxide.DataFileSystem.WriteObject("GoldenAKChallenge", gameData);
-        }
-       
-        private void LoadData()
-        {
-
-            try
-            {
-                gameData = Interface.Oxide.DataFileSystem.ReadObject<StoredData>("GoldenAKChallenge");
-            }
-            catch (Exception ex)
-            {
-                if(ex is MissingMethodException)
-                {
-                    Puts("No data was found.");
-                    gameData = new StoredData();
-                    return;
-                }
-                RaiseError($"Failed to load data file. ({ex.Message})\n");
-            }
-        }
-
-    	void Init()
-        {   
-            LoadData();			
-        }
-
-		void OnServerSave()
+	[Info("Golden AK Challenge", "2CHEVSKII", "0.1.0")]
+	internal class GoldenAKChallenge : RustPlugin
+	{
+		private const ulong SKIN = 1362212220;
+
+		private const string PERMISSION = "goldenakchallenge.admin";
+
+		private const string VENDINGPREFAB = "assets/prefabs/deployable/vendingmachine/vending_mapmarker.prefab";
+		private const string GENERICPREFAB = "assets/prefabs/tools/map/genericradiusmarker.prefab";
+
+		private static GoldenAKChallenge Plugin { get; set; }
+
+		private AKEvent CurrentEvent { get; set; }
+
+
+
+
+
+
+
+
+		#region API
+
+
+		public bool StartGoldenAKChallenge() => StartGoldenAKChallenge(FindPointForEventSpawn(), Settings.MaxEventTime);
+
+		public bool StartGoldenAKChallenge(float time) => StartGoldenAKChallenge(FindPointForEventSpawn(), time);
+
+		public bool StartGoldenAKChallenge(Vector3 point) => StartGoldenAKChallenge(point, Settings.MaxEventTime);
+
+		public bool StartGoldenAKChallenge(Vector3 point, float time)
 		{
-			SaveData();
+			if(CurrentEvent != null) return false;
+
+			InitializeAkEvent(point, time);
+
+			return true;
 		}
 
-        void Unload()
-        {
-            mapMarker?.Kill();
-            mapMarker.SendUpdate();
-            DestroyAnyTracker();
-            SaveData();
-        }           
+		public bool StopGoldenAKChallenge()
+		{
+			if(CurrentEvent == null) return false;
 
-        private string Lang(string key, string id = null, params object[] args) => string.Format(lang.GetMessage(key, this, id), args);
-    }
+			FinishAkEvent();
+
+			return true;
+		}
+
+		public bool IsAkEventRunning() => CurrentEvent != null;
+
+
+		#endregion
+
+
+
+
+
+
+
+
+
+
+		private void InitializeAkEvent(Vector3 point, float time)
+		{
+			SpawnEventTrigger(point);
+			CurrentEvent.FinishTime = Time.realtimeSinceStartup + Settings.MaxEventTime;
+		}
+
+		private void FinishAkEvent()
+		{
+			DeleteEventTrigger();
+			
+		}
+
+
+
+
+
+
+
+		private void SpawnEventTrigger(Vector3 point) => ItemManager.CreateByName("rifle.ak", 1, SKIN).CreateWorldObject(point).gameObject.AddComponent<AKEvent>();
+
+		private void DeleteEventTrigger() => CurrentEvent.Entity.Kill();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		private class AKEvent : MonoBehaviour
+		{
+
+			public BaseEntity Entity { get; private set; }
+
+			public float FinishTime { get; set; }
+
+			private Dictionary<BasePlayer, float> Capturers { get; } = new Dictionary<BasePlayer, float>();
+
+			private VendingMachineMapMarker textMarker;
+			private MapMarkerGenericRadius marker;
+
+			private void Awake()
+			{
+				Entity = GetComponent<BaseEntity>();
+				Entity.gameObject.layer = (int)Layer.Reserved1;
+
+				Plugin.CurrentEvent = this;
+
+				SetupPosition();
+				SetupMarkers();
+				SetupTrigger();
+			}
+
+			void Start()
+			{
+				Plugin.AnnounceInChat(MSTARTED);
+
+				InvokeRepeating("DoRotation", 0.1f, 0.1f);
+				InvokeRepeating("PrintStats", 1f, 1f);
+			}
+
+			private void OnTriggerEnter(Collider col)
+			{
+				if(col.gameObject.layer != 17) return;
+
+				BasePlayer player = col.gameObject.GetComponent<BasePlayer>();
+
+				if(player == null || Capturers.ContainsKey(player)) return;
+
+				Capturers.Add(player, 0f);
+				Plugin.Puts($"Player {player.displayName} entered capture area");
+
+				//draw ui
+			}
+
+			private void OnTriggerExit(Collider col)
+			{
+				if(col.gameObject.layer != 17) return;
+
+				BasePlayer player = col.gameObject.GetComponent<BasePlayer>();
+
+				if(player == null || !Capturers.ContainsKey(player)) return;
+
+				Capturers.Remove(player);
+				Plugin.Puts($"Player {player.displayName} leaved the area");
+
+				//destroy ui
+			}
+
+			private List<BasePlayer> listToRemove = new List<BasePlayer>();
+			private List<BasePlayer> listToIncrease = new List<BasePlayer>();
+
+			void FixedUpdate()
+			{
+				if(FinishTime <= Time.realtimeSinceStartup)
+				{
+					Plugin.FinishAkEvent();
+				}
+
+				var winner = Capturers.FirstOrDefault(x => x.Value >= Plugin.Settings.TimeToCapture).Key;
+
+				if(winner != null)
+				{
+					Plugin.AnnounceInChat(MCAPTURED, winner.displayName); //гдеяэ FORMAT EXCEPTION
+					Plugin.FinishAkEvent();
+				}
+			}
+
+			void Update()
+			{
+				listToRemove.Clear();
+				listToIncrease.Clear();
+
+				foreach(var key in Capturers.Keys)
+				{
+					if(key == null || key.IsDead() || !key.IsConnected)
+					{
+						listToRemove.Add(key);
+					}
+					else
+					{
+						listToIncrease.Add(key);
+					}
+				}
+			}
+
+			void LateUpdate()
+			{
+				foreach(var player in listToRemove)
+				{
+					Capturers.Remove(player);
+					var vector = Entity.transform.position + new Vector3(Random.Range(2f, 5f), 0f, Random.Range(2f, 5f));
+					vector.y = TerrainMeta.HeightMap.GetHeight(vector);
+					player?.MovePosition(vector);
+				}
+
+				foreach(var player in listToIncrease)
+				{
+					Capturers[player] += Time.deltaTime;
+				}
+			}
+
+
+			void PrintStats()
+			{
+				Plugin.Puts(JsonConvert.SerializeObject(Capturers.Select(x => new KeyValuePair<string, float>(x.Key.displayName, x.Value)), Formatting.Indented));
+			}
+
+
+			private void OnDestroy()
+			{
+				CancelInvoke();
+
+				DestroyMarkers();
+
+				Plugin.AnnounceInChat(MFINISHED);
+			}
+
+
+			#region Pos setup
+
+
+			private void SetupPosition()
+			{
+				Entity.transform.position = Entity.transform.position + new Vector3(0, 1.5f, 0);
+				Entity.transform.rotation = Quaternion.Euler(90, 0, 0);
+				Entity.transform.hasChanged = true;
+				Entity.SendNetworkUpdateImmediate();
+			}
+
+			private void SetupTrigger()
+			{
+				Rigidbody rbody = Entity.GetComponent<Rigidbody>();
+
+				rbody.isKinematic = true;
+				rbody.useGravity = false;
+				rbody.detectCollisions = true;
+				rbody.collisionDetectionMode = CollisionDetectionMode.Discrete;
+
+				SphereCollider collider = gameObject.AddComponent<SphereCollider>();
+				collider.isTrigger = true;
+				collider.radius = 1.5f;
+			}
+
+			private void DoRotation() => Entity.transform.Rotate(new Vector3(0, 0, 2f));
+
+
+			#endregion
+
+			#region Markers
+
+
+			void SetupMarkers()
+			{
+				textMarker = GameManager.server.CreateEntity(VENDINGPREFAB, Entity.transform.position) as VendingMachineMapMarker;
+				marker = GameManager.server.CreateEntity(GENERICPREFAB, Entity.transform.position) as MapMarkerGenericRadius;
+
+				textMarker.markerShopName = $"Golden AK";
+				textMarker.Spawn();
+
+				marker.radius = 0.4f;
+				marker.color1 = Color.yellow;
+				marker.color2 = Color.black;
+				marker.alpha = 1f;
+				marker.Spawn();
+				marker.SendUpdate();
+			}
+
+			void DestroyMarkers()
+			{
+				foreach(var player in BasePlayer.activePlayerList)
+				{
+					textMarker.DestroyOnClient(player.Connection);
+					marker.DestroyOnClient(player.Connection);
+				}
+
+				textMarker.Kill();
+				marker.Kill();
+
+				textMarker = null;
+				marker = null;
+			}
+
+
+			#endregion
+
+			#region UI
+
+
+			//void BuildCurrentUI()
+			//{
+			//	UI.Clear();
+
+			//	if(captureState == CaptureState.NoCapturer)
+			//		return;
+
+			//	UI.Add(new CuiPanel {
+			//		CursorEnabled = false,
+			//		Image = { Color = "0.5 0.5 0.5 0.8", FadeIn = 0.3f, Material = "assets/content/ui/namefontmaterial.mat" },
+			//		FadeOut = 0.3f,
+			//		RectTransform = { AnchorMax = "0.5 0.8", AnchorMin = "0.5 0.8", OffsetMax = "100 30", OffsetMin = "-100 -30" }
+			//	}, "Hud", "gakchallenge.main");
+
+			//	if(captureState == CaptureState.Capturing)
+			//	{
+			//		UI.Add(new CuiPanel {
+			//			CursorEnabled = false,
+			//			Image = { Color = "0.4 0.8 0.5 0.5", FadeIn = 0.3f, Material = "assets/content/ui/namefontmaterial.mat" },
+			//			FadeOut = 0.3f,
+			//			RectTransform = {
+			//				AnchorMax = "0.5 0.5",
+			//				AnchorMin = "0.5 0.5",
+			//				OffsetMax = $"{(captureState == CaptureState.Concurrent ? 0f : lastCaptureTime / Plugin.Settings.TimeToCapture * 10f).ToString("0")}",
+			//				OffsetMin = $"{(captureState == CaptureState.Concurrent ? 0f : -(lastCaptureTime / Plugin.Settings.TimeToCapture * 10f)).ToString("0")}"
+			//			}
+			//		}, "gakchallenge.main", "gakchallenge.capturepanel");
+			//	}
+
+			//	UI.Add(new CuiElement {
+			//		Parent = "gakchallenge.main",
+			//		Name = "gakchallenge.text",
+			//		Components = {
+			//			new CuiTextComponent {
+			//				Text = captureState == CaptureState.Concurrent ? "Concurrent" : "Capturing..."
+			//			},
+			//			new CuiOutlineComponent {
+			//				Color = "0 0 0 1",
+			//				Distance = "-1.0 1.0",
+			//				UseGraphicAlpha = true
+			//			},
+			//			new CuiRectTransformComponent {
+			//				AnchorMax = "0.5 0.5",
+			//				AnchorMin = "0.5 0.5",
+			//				OffsetMax = "100 30",
+			//				OffsetMin = "-100 -30"
+			//			}
+			//		}
+			//	});
+			//}
+
+
+			#endregion
+		}
+
+		void GiveRewards(BasePlayer player)
+		{
+			var item = ItemManager.CreateByName(Settings.Shortname, Settings.Amount, Settings.Skin);
+
+			if(item != null)
+			{
+				player.GiveItem(item, BaseEntity.GiveItemReason.PickedUp);
+				//announce
+			}
+		}
+
+
+
+		#region Command
+
+
+		private void CommandHandler(BasePlayer player, string command, string[] args)
+		{
+			if(!CheckPermission(player))
+			{
+				MessagePlayer(player, MNOPERMISSION);
+
+				return;
+			}
+
+			if(args.Length != 1)
+			{
+				MessagePlayer(player, MINVALIDARGS);
+
+				return;
+			}
+
+			switch(args[0].ToLower())
+			{
+				case "start":
+					if(!StartGoldenAKChallenge()) MessagePlayer(player, MALREADYSTARTED);
+
+					break;
+
+				case "stop":
+					if(!StopGoldenAKChallenge()) MessagePlayer(player, MNOTSTARTED);
+
+					break;
+			}
+		}
+
+		private bool CommandHandler(ConsoleSystem.Arg arg)
+		{
+			BasePlayer player = arg.Player();
+
+			if(player != null && !CheckPermission(player))
+			{
+				MessageConsole(arg, MNOPERMISSION);
+
+				return false;
+			}
+
+			if(arg.Args == null || arg.Args.Length != 1)
+			{
+				MessageConsole(arg, MINVALIDARGS);
+
+				return false;
+			}
+
+			switch(arg.Args[0].ToLower())
+			{
+				case "start":
+					if(!StartGoldenAKChallenge()) MessageConsole(arg, MALREADYSTARTED);
+
+					break;
+
+				case "stop":
+					if(!StopGoldenAKChallenge()) MessageConsole(arg, MNOTSTARTED);
+
+					break;
+			}
+
+			return true;
+		}
+
+
+		#endregion
+
+		#region Config
+
+
+		private PluginSettings Settings { get; set; }
+
+		protected override void LoadConfig()
+		{
+			base.LoadConfig();
+
+			try
+			{
+				Puts("Loading configuration...");
+				Settings = Config.ReadObject<PluginSettings>();
+
+				if(Settings == null) throw new JsonException("Error occured while loading configuration!");
+			}
+			catch
+			{
+				LoadDefaultConfig();
+			}
+		}
+
+		protected override void LoadDefaultConfig()
+		{
+			Settings = DefaultSettings;
+			PrintWarning("Default configuration created.");
+			SaveConfig();
+		}
+
+		protected override void SaveConfig()
+		{
+			Config.WriteObject(Settings, true);
+
+			Puts("Configuration saved.");
+		}
+
+		private PluginSettings DefaultSettings => new PluginSettings {
+			TimeToCapture = 60f,
+			AutoStartEventInterval = 0f,
+			MaxEventTime = 100f,
+			Shortname = "",
+			Amount = 1,
+			Skin = 0
+		};
+
+		private class PluginSettings
+		{
+			[JsonProperty("Time needed to capture the objective (seconds)")]
+			public float TimeToCapture { get; set; }
+
+			[JsonProperty("Event auto-start interval (seconds)")]
+			public float AutoStartEventInterval { get; set; }
+
+			[JsonProperty("Event auto-finish time (seconds)")]
+			public float MaxEventTime { get; set; }
+
+			[JsonProperty("Shortname of reward item")]
+			public string Shortname { get; set; }
+
+			[JsonProperty("Amount of reward item")]
+			public int Amount { get; set; }
+
+			[JsonProperty("Skin of reward item")]
+			public ulong Skin { get; set; }
+
+			[JsonProperty("Broadcast changes in chat")]
+			public bool Broadcast { get; set; }
+		}
+
+
+		#endregion
+
+		#region Helpers
+
+
+		private bool CheckPermission(BasePlayer player) => permission.UserHasPermission(player.UserIDString, PERMISSION);
+
+		private Vector3 FindPointForEventSpawn()
+		{
+			List<Vector3> list = FindPotentialPointsForEventSpawn();
+
+			Dictionary<Vector3, float> distancesToPlayers = new Dictionary<Vector3, float>();
+
+			foreach(Vector3 vector in list)
+			{
+				BasePlayer closestPlayer = BasePlayer.activePlayerList.OrderByDescending(player => Vector3.Distance(player.transform.position, vector)).First();
+
+				distancesToPlayers.Add(vector, Vector3.Distance(vector, closestPlayer.transform.position));
+			}
+
+			Vector3 bestpoint = distancesToPlayers.OrderByDescending(x => x.Value).First().Key;
+
+			return bestpoint;
+		}
+
+		private List<Vector3> FindPotentialPointsForEventSpawn(int iterations = 50)
+		{
+			List<Vector3> list = new List<Vector3>();
+
+			for(int i = 0; i < iterations; i++)
+			{
+				Vector3 vector = new Vector3(Random.Range(-World.Size * 0.5f, World.Size * 0.5f), 0, Random.Range(-World.Size * 0.5f, World.Size * 0.5f));
+				vector.y = TerrainMeta.HeightMap.GetHeight(vector);
+
+				if(vector.y <= 0f)
+				{
+					i--;
+
+					continue;
+				}
+
+				list.Add(vector);
+			}
+
+			return list;
+		}
+
+
+		#endregion
+
+		#region Oxide Hooks
+
+
+		private void Init()
+		{
+			Plugin = this;
+
+			permission.RegisterPermission(PERMISSION, this);
+
+			cmd.AddChatCommand("gac", this, CommandHandler);
+			cmd.AddConsoleCommand("gac", this, CommandHandler);
+		}
+
+		private object OnItemPickup(Item item, BasePlayer player) => item?.GetWorldEntity()?.GetComponent<AKEvent>() != null ? (object)true : null;
+
+		private void Unload() => BaseNetworkable.serverEntities.OfType<DroppedItem>().ToList().ForEach(x => x.Kill());
+
+
+		#endregion
+
+		#region Lang
+
+
+		private const string MPREFIX         = "Prefix",
+		                     MSTARTED        = "Event started",
+		                     MFINISHED       = "Event finished",
+		                     MSTARTEDCAPTURE = "Player started capture",
+		                     MSTOPPEDCAPTURE = "Player stopped capture",
+		                     MCAPTURED       = "Player has captured objective",
+		                     MKILLED         = "Player was killed while capturing",
+		                     MCANNOTPICKUP   = "Can't pickup",
+		                     MNOPERMISSION   = "No permission",
+		                     MCANNOTCAPTURE  = "Can't capture",
+		                     MINVALIDARGS    = "Wrong command usage",
+		                     MALREADYSTARTED = "Event already started",
+		                     MNOTSTARTED     = "No active event";
+
+		private Dictionary<string, string> DefMessagesEn => new Dictionary<string, string> {
+			[MPREFIX] = "Golden AK Challenge",
+			[MSTARTED] = "Event Started! Check your map to find position of the objective.",
+			[MFINISHED] = "Event finished!",
+			[MSTARTEDCAPTURE] = "Player {0} is capturing the AK!",
+			[MSTOPPEDCAPTURE] = "Player {0} has stopped capturing the AK.",
+			[MCAPTURED] = "Player {0} has captured the AK and received!",
+			[MKILLED] = "Player {0} was killed while capturing the AK!",
+			[MCANNOTPICKUP] = "You cannot pickup the event item.",
+			[MNOPERMISSION] = "You are not allowed to do this.",
+			[MCANNOTCAPTURE] = "You cannot capture the objective, player {0} is already capturing it!",
+			[MINVALIDARGS] = "Wrong arguments provided!"
+			                 + "\n/gac <start/stop>",
+			[MALREADYSTARTED] = "There is an active event already, finish this before starting a new one!",
+			[MNOTSTARTED] = "There are not active events yet!"
+		};
+
+		protected override void LoadDefaultMessages() => lang.RegisterMessages(DefMessagesEn, this);
+
+		private void AnnounceInChat(string msg, params object[] args) =>
+			Server.Broadcast(string.Format(lang
+				                               .GetMessage(MPREFIX, this, lang.GetServerLanguage()) + " " + lang
+				                               .GetMessage(msg, this, lang.GetServerLanguage()), args));
+
+		private void MessagePlayer(BasePlayer player, string key, params object[] args) =>
+			player.ChatMessage(string.Format(lang
+				                                 .GetMessage(MPREFIX, this, player.UserIDString) + " " + lang
+				                                 .GetMessage(key, this, player.UserIDString), args));
+
+		private void MessageConsole(ConsoleSystem.Arg arg, string key, params object[] args) =>
+			arg.ReplyWith(string.Format(lang
+				                            .GetMessage(MPREFIX, this, arg.Player()?.UserIDString) + " " + lang
+				                            .GetMessage(key, this, arg.Player()?.UserIDString), args));
+
+
+		#endregion
+
+		// TODO: MAke API
+	}
 }
