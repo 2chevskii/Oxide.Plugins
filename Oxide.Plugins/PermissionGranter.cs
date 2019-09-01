@@ -202,6 +202,9 @@ namespace Oxide.Plugins
 										}
 									}
 									break;
+								case "groups":
+									player.Message(string.Join(", ", permission.GetGroups()));
+									break;
 								default:
 									player.Message(GetLocalizedMessage(player, "usage show"));
 									break;
@@ -219,7 +222,7 @@ namespace Oxide.Plugins
 		private Dictionary<string, string> defaultmessages_en = new Dictionary<string, string>
 		{
 			["usage grant-revoke"] = "Usage: pgrant <grant/revoke> <group/user> <groupname/username> <permission>",
-			["usage show"] = "Usage: pgrant show <perms/group/user> <.../groupname/username>",
+			["usage show"] = "Usage: pgrant show <perms/group/user/groups> <.../groupname/username/...>",
 			["user not found"] = "User {0} does not exists",
 			["group not found"] = "Group {0} does not exists",
 			["perm not found"] = "Permission {0} does not exists",
