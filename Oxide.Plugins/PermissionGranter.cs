@@ -5,7 +5,7 @@ using Oxide.Core.Plugins;
 
 namespace Oxide.Plugins
 {
-	[Info("Permission Granter", " 2CHEVSKII", "0.1.0")]
+	[Info("Permission Granter", "2CHEVSKII", "0.1.0")]
 	class PermissionGranter:CovalencePlugin
 	{
 		[Command("pgrant")]
