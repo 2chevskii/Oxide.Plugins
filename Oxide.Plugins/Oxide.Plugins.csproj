@@ -1,0 +1,66 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{4D0098BE-A541-4C02-999C-A5D0E893781A}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Oxide.Plugins</RootNamespace>
+    <AssemblyName>2CHEVSKII.Plugins.uMod</AssemblyName>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>false</DebugSymbols>
+    <DebugType>none</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>
+    </DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
+    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AFKAPI.cs" />
+    <Compile Include="AutoFPSLimiter.cs" />
+    <Compile Include="CapacityController.cs" />
+    <Compile Include="DisableDamage.cs" />
+    <Compile Include="DumpInfo.cs" />
+    <Compile Include="DVACHEVSKIIDebugPlugin.cs" />
+    <Compile Include="EntityCleanup.cs" />
+    <Compile Include="GodmodeIndicator.cs" />
+    <Compile Include="GoldenAKChallenge.cs" />
+    <Compile Include="HighWallBarricades.cs" />
+    <Compile Include="IgnoreCollision.cs" />
+    <Compile Include="IngameClockGUI.cs" />
+    <Compile Include="Newbie.cs" />
+    <Compile Include="NoClipRestrictions.cs" />
+    <Compile Include="NPCDropGun.cs" />
+    <Compile Include="PerformanceRestarter.cs" />
+    <Compile Include="PerformanceUI.cs" />
+    <Compile Include="PermissionGranter.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RealisticExplosions.cs" />
+    <Compile Include="Replenish.cs" />
+    <Compile Include="Telekinesis.cs" />
+    <Compile Include="TeleportGun.cs" />
+    <Compile Include="TickrateLimiter.cs" />
+    <Compile Include="WeatherDB.cs" />
+    <Compile Include="WhereIsMyHorse.cs" />
+    <Compile Include="WipeDataCleaner.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
